@@ -1,9 +1,17 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <tuple>
 #include <memory>
 #include <vector>
 #include <map>
 #include <string>
+
+class cShape;
+class GameEngine;
+class cTransform;
+class cBoundingBox;
+
+using ComponentTuple = std::tuple<cTransform,cShape,cBoundingBox>;
 
 struct Rectangle
 {
@@ -66,6 +74,140 @@ class cBoundingBox: public Component
 
 class Entity
 {
+    private:
+        int id;
+        bool alive;
+        std::string tag;
+        ComponentTuple components;
+
+    friend class EntityManager;
+
+    public:
+        Entity(bool pAlive,std::string pTag,int pID)
+        {
+            id = pID;
+            tag = pTag;
+            alive = pAlive;
+        }
+
+        void destroy()
+        {
+            alive = false;
+        }
+        
+        template<typename T,typename... TArgs>
+        T& addComponents(TArgs&&... mArgs)
+        {
+            auto & component = std::get<T>(components);
+            component = T(std::forward<TArgs>(mArgs)...);
+            component.exists = true;
+
+            return component;
+        }
+
+        template<typename T>
+        bool hasComponent()
+        {
+            return std::get<T>().exists;
+        }
+
+        template<typename T>
+        T& getComponent()
+        {
+            return std::get<T>(components);
+        }
+
+        template<typename T>
+        void removeComponent()
+        {
+            std::get<T>().exist = false;
+        }
+};
+
+class EntityManager
+{
+    int totalEntities = 0;
+    std::vector<std::shared_ptr<Entity>> ents;
+    std::vector<std::shared_ptr<Entity>> toAdd;
+    std::multimap<std::string,std::shared_ptr<Entity>> entityMap;
+
+    public:
+        void update()
+        {
+            for(int i=0;i<toAdd.size();i++)
+            {
+                ents.push_back(toAdd[i]);
+                entityMap.insert(std::pair<std::string,std::shared_ptr<Entity>>(toAdd[i]->tag,toAdd[i]));
+            }
+            toAdd.clear();
+        }
+
+        std::shared_ptr<Entity> addEntity(std::string tag)
+        {
+            std::shared_ptr<Entity> ent = std::make_shared<Entity>(true,tag,totalEntities);
+            toAdd.push_back(ent);
+            totalEntities++;
+
+            return ent;
+        }
+
+        std::vector<std::shared_ptr<Entity>> getEntities(std::string key)
+        {
+            std::vector<std::shared_ptr<Entity>> entv;
+            std::multimap<std::string,std::shared_ptr<Entity>>::iterator it;
+            std::pair<std::multimap<std::string,std::shared_ptr<Entity>>::iterator, std::multimap<std::string,std::shared_ptr<Entity>>::iterator> ret;
+
+            ret = entityMap.equal_range(key);
+            for(it=ret.first; it!=ret.second; ++it)
+            {
+                entv.push_back(it->second);
+            }
+
+            return entv;
+        }
+
+        void removeEntity()
+        {
+            totalEntities--;
+        }
+};
+
+class Scene
+{
+    protected:
+        static bool paused;
+        static bool hasEnded;
+        static EntityManager entities;
+        static std::shared_ptr<GameEngine> game;
+
+    public:
+        virtual void sDraw() = 0;
+        virtual void sUpdate() = 0;
+};
+
+class Gameplay_Scene: Scene
+{
+    public:
+        void sUpdate() override
+        {
+        }
+
+        void sDraw() override
+        {
+        }
+};
+
+class GameEngine
+{
+    bool running;
+    sf::RenderWindow window;
+    std::shared_ptr<Gameplay_Scene> gameScene;
+
+    public:
+        GameEngine()
+        {
+            gameScene = std::make_shared<Gameplay_Scene>();
+        }
 };
 
 int main()
