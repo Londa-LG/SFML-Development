@@ -50,6 +50,31 @@ int main()
     octagon.setPoint(6, sf::Vector2f(-10,30));
     octagon.setPoint(7, sf::Vector2f(-10,10));
 
+    //hexagon
+    sf::ConvexShape hexagon;
+    hexagon.setPointCount(6);
+    hexagon.setPosition(100,100);
+    hexagon.setOutlineThickness(8);
+    hexagon.setOutlineColor(sf::Color::Blue);
+    hexagon.setFillColor(sf::Color::Transparent);
+    hexagon.setPoint(0, sf::Vector2f(20,0));
+    hexagon.setPoint(1, sf::Vector2f(40,0));
+    hexagon.setPoint(2, sf::Vector2f(50,20));
+    hexagon.setPoint(3, sf::Vector2f(40,40));
+    hexagon.setPoint(4, sf::Vector2f(20,40));
+    hexagon.setPoint(5, sf::Vector2f(10,20));
+
+    // Shooter
+    sf::ConvexShape shooter;
+    shooter.setPointCount(4);
+    shooter.setPosition(200,100);
+    shooter.setOutlineThickness(8);
+    shooter.setFillColor(sf::Color::Transparent);
+    shooter.setPoint(0, sf::Vector2f(0,20));
+    shooter.setPoint(1, sf::Vector2f(40,40));
+    shooter.setPoint(2, sf::Vector2f(60,20));
+    shooter.setPoint(3, sf::Vector2f(40,0));
+
     //Arrow
     sf::ConvexShape arrow;
     arrow.setPointCount(6);
@@ -82,6 +107,8 @@ int main()
         window.draw(arrow);
         window.draw(circle);
         window.draw(octagon);
+        window.draw(hexagon);
+        window.draw(shooter);
         window.draw(triangle);
         window.draw(rectangle);
 
