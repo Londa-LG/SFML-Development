@@ -3,6 +3,7 @@
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(800,600), "Window");
+    window.setFramerateLimit(60);
 
     // Game loop
     while (window.isOpen())
