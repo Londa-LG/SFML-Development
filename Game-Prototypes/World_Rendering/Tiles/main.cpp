@@ -3,15 +3,78 @@
 #include <fstream>
 #include <iostream>
 
-std::vector<sf::Sprite> sMapping(std::string fileName)
+struct Tile{
+    sf::IntRect tile;
+};
+
+struct TilePosition{
+    int x,y;
+};
+
+std::vector<Tile> sGetTiles(std::map<std::string,sf::IntRect>& map,std::string fileName)
 {
-    sf::Sprite sprite;
-    sf::Texture texture;
+    int start = 0;
     std::string line,value;
-    int width = 64,height = 64;
     std::ifstream file(fileName);
-    std::vector<sf::Sprite> tiles;
-    int column = 0,row = 0,start = 0;
+    std::vector<Tile> tiles;
+
+    while(file >> line)
+    {
+        for(int i=0; i<line.length();i++)
+        {
+            if(line[i] == ',')
+            {
+                for(int j=(start + 1); j<i; j++)
+                {
+                    value += line[j];
+                }
+                Tile tile;
+                tile.tile = map[value];
+                tiles.push_back(tile);
+                start = i;
+                value = "";
+            }
+        }
+    }
+
+    return tiles;
+}
+
+std::vector<TilePosition> sPositions(std::string fileName)
+{
+    int start = 0;
+    std::string line;
+    int x = 0, y = 0;
+    std::ifstream file(fileName);
+    std::vector<TilePosition> tiles;
+    const int width = 64, height = 64;
+
+    while(file >> line)
+    {
+        for(int i=0; i<line.length();i++)
+        {
+            if(line[i] == ',')
+            {
+                TilePosition pos;
+                pos.x = x * width;
+                pos.y = y * height;
+                tiles.push_back(pos);
+                start = i;
+                ++x;
+            }
+        }
+        ++y;
+    }
+
+    return tiles;
+}
+ 
+int main()
+{
+    sf::RenderWindow window(sf::VideoMode(800,600), "Window");
+    window.setFramerateLimit(60);
+
+    const int width = 64, height = 64;
     std::map<std::string,sf::IntRect> map;
 
     // write out map
@@ -60,41 +123,8 @@ std::vector<sf::Sprite> sMapping(std::string fileName)
     map["52"] = sf::IntRect(448,320,width,height);
     map["53"] = sf::IntRect(512,320,width,height);
 
-    texture.loadFromFile("tiles/Tilemap_color1.png");
-    while(file >> line)
-    {
-        for(int i=0; i<line.length();i++)
-        {
-            if(line[i] == ',')
-            {
-                for(int j=(start + 1); j<i; j++)
-                {
-                    value += line[j];
-                }
-                // Generate sprite from value
-                sprite.setTexture(texture);
-                sprite.setTextureRect(map[value]);
-                sprite.setPosition((width*column),(height*row));
-                tiles.push_back(sprite);
-                
-                start = i;
-                value = "";
-            }
-
-            ++column;
-        }
-        ++row;
-    }
-
-    return tiles;
-}
- 
-int main()
-{
-    sf::RenderWindow window(sf::VideoMode(800,600), "Window");
-    window.setFramerateLimit(60);
-
-    sMapping("csv/topDownMap_Island.csv");
+    std::vector<Tile> tiles = sGetTiles(map,"csv/topDownMap_Island.csv");
+    std::vector<TilePosition> position = sPositions("csv/topDownMap_Island.csv");
 
     // Game loop
     while (window.isOpen())
@@ -110,6 +140,7 @@ int main()
 
         window.clear(sf::Color::Yellow);
         window.display();
+
     }
 
     return EXIT_SUCCESS;
