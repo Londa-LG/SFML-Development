@@ -1,128 +1,15 @@
 #include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
-#include <tuple>
 #include <memory>
-#include <vector>
-#include <map>
-#include <string>
 
-class GameEngine;
 class cTransform;
 class cBoundingBox;
 
 using ComponentTuple = std::tuple<cTransform,cBoundingBox>;
 
-class Action
-{
-    std::string name;
-    std::string type;
-
-    public:
-        //std::shared_ptr<std::string> name()
-        void getName()
-        {
-        }
-        //std::shared_ptr<std::string> type()
-        void getTpe()
-        {
-        }
-};
-
-class Animation
-{
-    float deltaTime = 1.0f/60;
-    int frameCount;
-    sf::Sprite sprite;
-    float frameIndex = 0;
-    sf::Texture animation;
-    sf::Vector2i frameSize;
-    std::vector<sf::Vector2i> frames;
-
-    public:
-        Animation(int pCount,std::vector<sf::Vector2i> pFrames,sf::Vector2i pSize,std::string pAnimation)
-        {
-            frames = pFrames;
-            frameSize = pSize;
-            frameCount = pCount;
-            animation.loadFromFile(pAnimation);
-            sprite.setTexture(animation);
-            sprite.setTextureRect(sf::IntRect(frames[frameIndex].x,frames[frameIndex].y,frameSize.x,frameSize.y));
-            sprite.setColor(sf::Color::White);
-        }
-        void scale(int x,int y)
-        {
-            sprite.scale(x,y);
-        }
-        void setPosition(int x,int y)
-        {
-            sprite.setPosition(x,y);
-        }
-        void animate()
-        {
-            if(frameIndex < (frameCount - 1))
-            {
-                frameIndex += frameCount * deltaTime;
-            }
-            else
-            {
-                frameIndex = 0;
-            }
-            int i = (int)frameIndex;
-            sprite.setTextureRect(sf::IntRect(frames[i].x,frames[i].y,frameSize.x,frameSize.y));
-        }
-        sf::Sprite getSprite()
-        {
-            return sprite;
-        }
-};
-
-class Assets
-{
-    std::map<std::string,std::shared_ptr<sf::Font>> fonts;
-    std::map<std::string,std::shared_ptr<sf::Sound>> sounds;
-    std::map<std::string,std::shared_ptr<sf::Texture>> textures;
-    std::map<std::string,std::shared_ptr<Animation>> animations;
-
-    public:
-        void addTexture(std::string name,std::string path)
-        {
-            textures[name] = std::make_shared<sf::Texture>();
-            textures[name]->loadFromFile(path);
-        }
-        void addAnimation(std::string name,Animation animation)
-        {
-            animations[name] = std::make_shared<Animation>(animation);
-        }
-        void addSound(std::string name, std::string path)
-        {
-            sf::SoundBuffer buffer;
-            buffer.loadFromFile(path);
-
-            sounds[name] = std::make_shared<sf::Sound>();
-            sounds[name]->setBuffer(buffer);
-        }
-        void addFont(std::string name, std::string path)
-        {
-            fonts[name] = std::make_shared<sf::Font>();
-            fonts[name]->loadFromFile(path);
-        }
-
-        std::shared_ptr<sf::Texture> getTexture(std::string name)
-        {
-            return textures[name];
-        }
-        std::shared_ptr<Animation> getAnimation(std::string name)
-        {
-            return animations[name];
-        }
-        std::shared_ptr<sf::Sound> getSound(std::string name)
-        {
-            return sounds[name];
-        }
-        std::shared_ptr<sf::Font> getFont(std::string name)
-        {
-            return fonts[name];
-        }
+struct Collision{
+    bool occured = false;
+    bool xMovement = false;
+    bool yMovement = false;
 };
 
 class Component
@@ -134,7 +21,7 @@ class Component
 class cTransform: public Component
 {
     public:
-        sf::Vector2f position;
+        sf::Vector2f position; // Bounding rect center
         sf::Vector2f velocity;
         sf::Vector2f maxVelocity;
         sf::Vector2f acceleration;
@@ -160,6 +47,12 @@ class cBoundingBox: public Component
     cBoundingBox(sf::FloatRect pRect)
     {
         rect = pRect;
+    }
+
+    void updatePosition(float x,float y)
+    {
+        rect.left = x - (rect.width/2);
+        rect.top = y - (rect.height/2);
     }
 };
 
@@ -266,13 +159,32 @@ class EntityManager
 class Physics
 {
     public:
-        bool isCollision(std::shared_ptr<Entity> ent1,std::shared_ptr<Entity> ent2)
+        Collision isCollision(std::shared_ptr<Entity> ent1,std::shared_ptr<Entity> ent2)
         {
-            // Edit
-            return false;
+            Collision collision;
+
+            sf::FloatRect ent1B = ent1->getComponent<cBoundingBox>().rect; 
+            sf::FloatRect ent2B = ent1->getComponent<cBoundingBox>().rect;
+            float deltaX = abs((ent1B.left + ent1B.width) - (ent2B.left + ent2B.width));
+            float deltaY = abs((ent1B.top + ent1B.height) - (ent2B.top + ent2B.height));
+            float overlapX = (ent1B.width/2) + (ent2B.width/2) - deltaX;
+            float overlapY = (ent1B.height/2) + (ent2B.height/2) - deltaY;
+
+            if((overlapX >0) || (overlapY >0))
+            {
+                if(overlapX > 0)
+                {
+                    collision.yMovement = true;
+                }
+                else if(overlapY > 0)
+                {
+                    collision.xMovement = true;
+                }
+            }
+
+            return collision;
         }
 };
-
 
 class Scene
 {
@@ -281,8 +193,8 @@ class Scene
         static bool hasEnded;
         static int currentFrame;
         static EntityManager entities;
-        static std::shared_ptr<GameEngine> game;
         static std::map<int,std::string> actionMap;
+        static std::shared_ptr<sf::RenderWindow> window;
 
     public:
         virtual void update() = 0;
@@ -294,11 +206,13 @@ class Scene_Play : Scene
 {
     std::string levelPath;
     std::shared_ptr<Entity> player;
+    std::shared_ptr<std::map<std::string,sf::IntRect>> map;
 
     public:
-        void init()
+        void init(std::shared_ptr<std::map<std::string,sf::IntRect>> pMap)
         {
             // Edit
+            map = pMap;
         }
         void update() override
         {
@@ -324,7 +238,8 @@ class Scene_Play : Scene
         }
         void sRender() override
         {
-            // Edit
+            //Render World
+            //Render Characters
         }
         void sDoAction() override
         {
@@ -364,56 +279,40 @@ class Scene_Menu : Scene
         }
 };
 
-class GameEngine
-{
-    bool running;
-    Assets assets;
-    sf::RenderWindow window;
-    std::string currentScene;
-    std::map<std::string,Scene> scenes;
-
-    public:
-        void init()
-        {
-            // Edit
-        }
-        //std::shared_ptr<Scene> getCurrentScene()
-        void getCurrentScene()
-        {
-            // Edit
-        }
-        void run()
-        {
-            // Edit
-        }
-        void update()
-        {
-            // Edit
-        }
-        void quit()
-        {
-            // Edit
-        }
-        void changeScene(std::string)
-        {
-            // Edit
-        }
-        void loadAssets()
-        {
-            // Edit
-        }
-        void getWindow()
-        {
-            // Edit
-        }
-        void sUserInput()
-        {
-            // Edit
-        }
-};
 
 int main()
 {
-    return 0;
-}
+    sf::RenderWindow window(sf::VideoMode(600,600), "Collisions");
+    window.setFramerateLimit(60);
 
+    Scene_Play gameplay = Scene_Play();
+    Scene_Menu menu = Scene_Menu();
+
+    bool currentScene = true;
+
+    // Game loop
+    while (window.isOpen())
+    {
+        sf::Event event;
+        while(window.pollEvent(event))
+        {
+            if(event.type == sf::Event::Closed)
+            {
+                window.close();
+            }
+        }
+
+        window.clear(sf::Color::Red);
+        if(currentScene)
+        {
+            gameplay.update();
+        }
+        else
+        {
+            menu.update();
+        }
+        window.display();
+    }
+
+    return EXIT_SUCCESS;
+}
