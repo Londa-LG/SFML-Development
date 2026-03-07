@@ -187,6 +187,28 @@ class Physics
 
         void collisionHandling(std::shared_ptr<Entity> ent1,std::shared_ptr<Entity> ent2)
         {
+            cBoundingBox bBox1 = ent1->getComponent<cBoundingBox>();
+            cBoundingBox bBox2 = ent2->getComponent<cBoundingBox>();
+            sf::Vector2f previousPosition1 = ent1->getComponent<cTransform>().previousPosition;
+
+            // Handling Horizontal
+            if((bBox1.right >= bBox2.left) && (previousPosition1.x < bBox1.left))
+            {
+                float x = bBox2.left - bBox1.rect.width - (bBox1.right - bBox2.left);
+                sf::Vector2f pos = sf::Vector2f(x,bBox1.top);
+                ent1->getComponent<cTransform>().updatePosition(pos);
+                ent1->getComponent<cBoundingBox>().updatePosition(pos);
+                ent1->getComponent<cShape>().updatePosition(pos);
+            }
+            // Handling Vertical
+            if((bBox1.bottom >= bBox2.top) && (previousPosition1.y < bBox1.top))
+            {
+                float y = bBox2.top - bBox1.rect.height - (bBox1.bottom - bBox2.top);
+                sf::Vector2f pos = sf::Vector2f(bBox1.left,y);
+                ent1->getComponent<cTransform>().updatePosition(pos);
+                ent1->getComponent<cBoundingBox>().updatePosition(pos);
+                ent1->getComponent<cShape>().updatePosition(pos);
+            }
         }
 };
 
@@ -244,9 +266,9 @@ int main()
     ent3->addComponent<cBoundingBox>(sf::FloatRect(position3,size));
     ent4->addComponent<cBoundingBox>(sf::FloatRect(position4,size));
     ent1->addComponent<cTransform>(position1,velocity,acceleration1,maxVelocity);
-    ent2->addComponent<cTransform>(position2,velocity,acceleration1,maxVelocity);
-    ent3->addComponent<cTransform>(position3,velocity,acceleration2,maxVelocity);
-    ent4->addComponent<cTransform>(position4,velocity,acceleration2,maxVelocity);
+    ent2->addComponent<cTransform>(position2,velocity,acceleration2,maxVelocity);
+    ent3->addComponent<cTransform>(position3,velocity,acceleration3,maxVelocity);
+    ent4->addComponent<cTransform>(position4,velocity,acceleration4,maxVelocity);
 
     while(window.isOpen())
     {
@@ -269,28 +291,18 @@ int main()
         Physics phy = Physics();
         if(phy.collisionDetection(ent1,ent2))
         {
-            std::cout << "Horizontal collision: Yes" << std::endl;
+            phy.collisionHandling(ent1,ent2);
         }
-        else
-        {
-            std::cout << "Horizontal collision: No" << std::endl;
-        }
-/*
         if(phy.collisionDetection(ent3,ent4))
         {
-            std::cout << "Vertical collision: Yes" << std::endl;
+            phy.collisionHandling(ent3,ent4);
         }
-        else
-        {
-            std::cout << "Vertical collision: No" << std::endl;
-        }
-*/
         // Render
         window.clear(sf::Color::Yellow);
         window.draw(ent1->getComponent<cShape>().rect);
         window.draw(ent2->getComponent<cShape>().rect);
-        //window.draw(ent3->getComponent<cShape>().rect);
-        //window.draw(ent4->getComponent<cShape>().rect);
+        window.draw(ent3->getComponent<cShape>().rect);
+        window.draw(ent4->getComponent<cShape>().rect);
         window.display();
     }
 
