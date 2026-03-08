@@ -26,10 +26,6 @@ class Animation
             sprite.setTextureRect(sf::IntRect(frames[frameIndex].x,frames[frameIndex].y,frameSize.x,frameSize.y));
             sprite.setColor(sf::Color::White);
         }
-        void setFlip(bool pFlip)
-        {
-            flip = pFlip;
-        }
         void scale(int x,int y)
         {
             sprite.scale(x,y);
@@ -58,12 +54,6 @@ class Animation
         }
         sf::Sprite getSprite()
         {
-            if(flip)
-            {
-                sprite.setOrigin(sprite.getLocalBounds().width /2.f,sprite.getLocalBounds().height /2.f);
-                sprite.setScale(-1.f,1.f);
-                return sprite;
-            }
             return sprite;
         }
 };
@@ -194,6 +184,7 @@ void sGravity(std::shared_ptr<Entity> ent,float delta)
     sf::Vector2f pos = ent->rect.currentPosition;
     pos.y += gravity * delta;
     ent->rect.updatePosition(pos);
+    ent->currentAnimation.setPosition(ent->rect.currentPosition);
 };
 
 void sMovement(std::shared_ptr<Entity> ent,float delta)
@@ -235,6 +226,13 @@ int main()
     }
     Animation idle = Animation(11,frames,size,"./Pink_Man/Idle (32x32).png");
     frames.clear();
+    for(int i=0; i<11;i++)
+    {
+        frames.push_back(sf::Vector2i((i * size.x),0));
+    }
+    Animation idleLeft = Animation(11,frames,size,"./Pink_Man/IdleLeft (32x32).png");
+    frames.clear();
+
    
     // Run
     for(int i=0;i<12;i++)
@@ -248,8 +246,7 @@ int main()
     {
         frames.push_back(sf::Vector2i((i * size.x),0));
     }
-    Animation runLeft = Animation(12,frames,size,"./Pink_Man/Run (32x32).png");
-    runLeft.setFlip(true);
+    Animation runLeft = Animation(12,frames,size,"./Pink_Man/RunLeft (32x32).png");
     frames.clear();
 
     // Jump
@@ -264,6 +261,7 @@ int main()
 
     // Add animations
     player->animations["idle"] = idle;
+    player->animations["idleLeft"] = idleLeft;
     player->animations["jump"] = jump;
     player->animations["fall"] = fall;
     player->animations["runRight"] = runRight;
@@ -311,8 +309,7 @@ int main()
                     if(player->movement.left)
                     {
                         player->movement.left = false;
-                        sChangeAnimation(player,"idle");
-                        player->currentAnimation.setFlip(true);
+                        sChangeAnimation(player,"idleLeft");
                     }
                 }
                 if((event.key.code == sf::Keyboard::D) || (event.key.code == sf::Keyboard::Right))
@@ -321,7 +318,6 @@ int main()
                     {
                         player->movement.right = false;
                         sChangeAnimation(player,"idle");
-                        player->currentAnimation.setFlip(false);
                     }
                 }
             }
@@ -334,6 +330,7 @@ int main()
         // move player
         sMovement(player,deltaTime);
         // apply gravity
+        sGravity(player,deltaTime);
         // handle collisions
 
         // Display
