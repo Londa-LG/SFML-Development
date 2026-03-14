@@ -73,6 +73,7 @@ int main()
         }
 
         proj = sMoveProjectile(mPos,proj);
+        std::cout << "Position y: "<< proj.getPosition().y << std::endl;
 
         window.clear(sf::Color::Yellow);
         window.draw(proj);
