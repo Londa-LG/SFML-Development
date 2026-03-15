@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <iostream>
+#include <cmath>
 
 class Animation
 {
@@ -113,7 +114,9 @@ struct Movement{
     bool fall = false;
     bool left = false;
     bool right = false;
-    float speed = 0;
+    float speed = 1600;
+    float jumpDestination;
+    float jumpHeight = 50;
 };
 
 struct Entity
@@ -123,6 +126,7 @@ struct Entity
     Animation currentAnimation;
     std::map<std::string,Animation> animations;
 };
+
 
 void sChangeAnimation(std::shared_ptr<Entity> ent,std::string changeTo)
 {
@@ -187,9 +191,18 @@ void sGravity(std::shared_ptr<Entity> ent,float delta)
     ent->currentAnimation.setPosition(ent->rect.currentPosition);
 };
 
+float jumpNormalize(float pos,float dest)
+{
+    float dy = dest - pos;
+    float hyp = sqrt(pow(dy,2));
+    float normalized = dy/hyp;
+
+    return normalized;
+}
 void sMovement(std::shared_ptr<Entity> ent,float delta)
 {
     sf::Vector2f pos = ent->rect.currentPosition;
+
 
     if(ent->movement.left)
     {
@@ -203,6 +216,29 @@ void sMovement(std::shared_ptr<Entity> ent,float delta)
         ent->rect.updatePosition(pos);
         ent->currentAnimation.setPosition(ent->rect.currentPosition);
     }
+    if(ent->movement.jump)
+    {
+        if(pos.y >ent->movement.jumpDestination)
+        {
+            float normalized = jumpNormalize(pos.y,ent->movement.jumpDestination);
+            pos.y += normalized * ent->movement.speed * delta;
+            ent->rect.updatePosition(pos);
+            ent->currentAnimation.setPosition(ent->rect.currentPosition);
+        }
+        else
+        {
+            ent->movement.jump = false;
+            sChangeAnimation(ent,"fall");
+        }
+    }
+}
+
+void sJump(std::shared_ptr<Entity> ent)
+{
+    sf::Vector2f pos = ent->rect.currentPosition;
+    ent->movement.jumpDestination = pos.y - ent->movement.jumpHeight;
+    ent->movement.jump = true;
+    sChangeAnimation(ent,"jump");
 }
  
 int main()
@@ -300,6 +336,10 @@ int main()
                         player->movement.right = true;
                         sChangeAnimation(player,"runRight");
                     }
+                }
+                if(event.key.code == sf::Keyboard::Space)
+                {
+                    sJump(player);
                 }
             }
             if(event.type == sf::Event::KeyReleased)
