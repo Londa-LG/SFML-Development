@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 class cBoundingBox
 {
@@ -122,7 +123,7 @@ class LevelGenerator
             }
         }
     }
-    void generateTiles(int tileCount,float tileWidth,float tileHeight)
+    void generateTiles(int colCount,float tileWidth,float tileHeight)
     {
         float col = 0, row = 0;
         std::string line, value;
@@ -149,7 +150,7 @@ class LevelGenerator
             tiles[i].tileSprite.setPosition(sf::Vector2f(col,row));
 
             col += tileWidth;
-            if(col == (col * tileCount))
+            if(col == (tileWidth * colCount))
             {
                 col = 0;
                 row += tileHeight;
@@ -167,8 +168,12 @@ class LevelGenerator
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(800,600), "Window");
+    sf::RenderWindow window(sf::VideoMode(650,400), "Window");
     window.setFramerateLimit(60);
+
+    std::vector<std::string> levels = {"./csv/level_1.csv","./csv/level_2.csv","./csv/level_3.csv","./csv/level_4.csv","./csv/level_5.csv"};
+    LevelGenerator level = LevelGenerator(16,16,"./Terrain.png",levels);
+    level.generateTiles(40,16.f,16.f);
 
     // Game loop
     while (window.isOpen())
@@ -182,7 +187,8 @@ int main()
             }
         }
 
-        window.clear(sf::Color::Yellow);
+        window.clear(sf::Color::White);
+        level.drawLevel(window);
         window.display();
     }
 
