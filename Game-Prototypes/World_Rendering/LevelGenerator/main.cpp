@@ -136,24 +136,22 @@ class LevelGenerator
             data.str(line);
             while(std::getline(data,value,','))
             {
-                Tile tile;
-                tile.tileSprite.setTexture(texture);
-                tile.tileSprite.setColor(sf::Color::White);
-                tile.tileSprite.setTextureRect(tileMap[stoi(value)]);
-                tiles.push_back(tile);
-            }
-        }
-
-        for(int i=0;i<=tiles.size();i++)
-        {
-            tiles[i].rect.updateBox(col,row,tileWidth,tileHeight);
-            tiles[i].tileSprite.setPosition(sf::Vector2f(col,row));
-
-            col += tileWidth;
-            if(col == (tileWidth * colCount))
-            {
-                col = 0;
-                row += tileHeight;
+                if(stoi(value) >= 1)
+                {
+                    Tile tile;
+                    tile.tileSprite.setTexture(texture);
+                    tile.tileSprite.setColor(sf::Color::White);
+                    tile.tileSprite.setTextureRect(tileMap[stoi(value)]);
+                    tile.rect.updateBox(col,row,tileWidth,tileHeight);
+                    tile.tileSprite.setPosition(sf::Vector2f(col,row));
+                    tiles.push_back(tile);
+                }
+                col += tileWidth;
+                if(col == (tileWidth * colCount))
+                {
+                    col = 0;
+                    row += tileHeight;
+                }
             }
         }
     }

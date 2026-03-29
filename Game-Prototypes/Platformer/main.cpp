@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <cmath>
 
 class Animation
@@ -127,6 +129,103 @@ struct Entity
     std::map<std::string,Animation> animations;
 };
 
+struct Transform
+{
+    bool up = false;
+    bool down = false;
+    bool left = false;
+    bool right = false;
+};
+
+struct Tile
+{
+    cBoundingBox rect;
+    sf::Sprite tileSprite;
+};
+
+struct DynamicTile
+{
+    cBoundingBox rect;
+    Transform transform;
+    sf::Sprite tileSprite;
+};
+
+class LevelGenerator
+{
+    public:
+    int currentLevel;
+    sf::Texture texture;
+    std::vector<Tile> tiles;
+    std::vector<std::string> levels;
+    std::map<int,sf::IntRect> tileMap;
+    //std::vector<DynamicTile> dynamicTiles;
+
+    LevelGenerator(int tileWidth,int tileHeight, std::string textureName,std::vector<std::string> pLevels)
+    {
+        levels = pLevels;
+        texture.loadFromFile(textureName);
+        generateTileMap(tileWidth,tileHeight);
+    }
+
+    void generateTileMap(int tileWidth,int tileHeight)
+    {
+        int tile = 0;
+        sf::Vector2u imageSize = texture.getSize();
+        int colCount = imageSize.x / tileWidth;
+        int rowCount = imageSize.y / tileHeight;
+
+        for(int i=0; i!=rowCount; i++)
+        {
+            for(int j=0; j!=colCount; j++)
+            {
+                int x = tileWidth * j;
+                int y = tileHeight * i;
+                tileMap[tile] = sf::IntRect(x,y,tileWidth,tileHeight);
+                ++tile;
+            }
+        }
+    }
+    void generateTiles(int colCount,float tileWidth,float tileHeight)
+    {
+        float col = 0, row = 0;
+        std::string line, value;
+        std::ifstream file(levels[currentLevel]);
+        std::vector<sf::Vector2f> pos;
+
+        while(file >> line)
+        {
+            std::istringstream data;
+            data.str(line);
+            while(std::getline(data,value,','))
+            {
+                if(stoi(value) >= 1)
+                {
+                    Tile tile;
+                    tile.tileSprite.setTexture(texture);
+                    tile.tileSprite.setColor(sf::Color::White);
+                    tile.tileSprite.setTextureRect(tileMap[stoi(value)]);
+                    tile.rect.updateBox(col,row,tileWidth,tileHeight);
+                    tile.tileSprite.setPosition(sf::Vector2f(col,row));
+                    tiles.push_back(tile);
+                }
+                col += tileWidth;
+                if(col == (tileWidth * colCount))
+                {
+                    col = 0;
+                    row += tileHeight;
+                }
+            }
+        }
+    }
+    void drawLevel(sf::RenderWindow& window)
+    {
+        for(int i=0;i<tiles.size(); i++)
+        {
+            window.draw(tiles[i].tileSprite);
+        }
+    }
+};
+
 
 void sChangeAnimation(std::shared_ptr<Entity> ent,std::string changeTo)
 {
@@ -138,6 +237,31 @@ bool collisionDetection(std::shared_ptr<Entity> ent1,std::shared_ptr<Entity> ent
 {
     cBoundingBox b1 = ent1->rect;
     cBoundingBox b2 = ent2->rect;
+
+    if(b1.right < b2.left)
+    {
+        return false;
+    }
+    if(b1.left > b2.right)
+    {
+        return false;
+    }
+    if(b1.bottom < b2.top)
+    {
+        return false;
+    }
+    if(b1.top > b2.bottom)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool collisionDetection(std::shared_ptr<Entity> ent1,Tile ent2)
+{
+    cBoundingBox b1 = ent1->rect;
+    cBoundingBox b2 = ent2.rect;
 
     if(b1.right < b2.left)
     {
@@ -177,6 +301,29 @@ void collisionHandling(std::shared_ptr<Entity> ent1,std::shared_ptr<Entity> ent2
     if((b1.bottom >= b2.top) && (previousPosition1.y < b1.top))
     {
         float y = b2.top = b1.height - (b1.bottom - b2.top);
+        sf::Vector2f pos = sf::Vector2f(b1.left,y);
+        ent1->rect.updatePosition(pos);
+    }
+}
+
+void collisionHandling(std::shared_ptr<Entity> ent1,Tile ent2)
+{
+    cBoundingBox b1 = ent1->rect;
+    cBoundingBox b2 = ent2.rect;
+    sf::Vector2f previousPosition1 = b1.previousPosition;
+
+    // Handling horizontal collisions
+    if((b1.right >= b2.left) && (previousPosition1.x < b1.left))
+    {
+        float x = b2.left - b1.width - (b1.right - b2.left);
+        sf::Vector2f pos = sf::Vector2f(x,b1.top);
+        ent1->rect.updatePosition(pos);
+    }
+    
+    // Handling vertical collisions
+    if((b1.bottom >= b2.top) && (previousPosition1.y < b1.top))
+    {
+        float y = b2.top - b1.height - (b1.bottom - b2.top);
         sf::Vector2f pos = sf::Vector2f(b1.left,y);
         ent1->rect.updatePosition(pos);
     }
@@ -246,12 +393,18 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800,600), "Platformer character");
     window.setFramerateLimit(60);
 
+    // Level
+    std::vector<std::string> levels = {"./levels/level_1.csv","./levels/level_2.csv","./levels/level_3.csv","./levels/level_4.csv","./levels/level_5.csv"};
+    LevelGenerator level = LevelGenerator(16,16,"./Terrain.png",levels);
+    level.generateTiles(40,16.0f,16.0f);
+
     // Character
     std::vector<sf::Vector2i> frames;
     sf::Vector2i size = sf::Vector2i(32,32);
     std::shared_ptr<Entity> player = std::make_shared<Entity>();
     player->movement.speed = 100;
     float deltaTime = 1.0f/60;
+    player->rect.updateBox(32,32,32,32);
 
     // Create Animations
 
@@ -372,9 +525,18 @@ int main()
         // apply gravity
         sGravity(player,deltaTime);
         // handle collisions
+        for(int i=0;i!=level.tiles.size();i++)
+        {
+            if(collisionDetection(player,level.tiles[i]))
+            {
+                collisionHandling(player,level.tiles[i]);
+            }
+        }
+        
 
         // Display
         window.clear(sf::Color::Yellow);
+        level.drawLevel(window);
         window.draw(player->currentAnimation.getSprite());
         window.display();
     }
