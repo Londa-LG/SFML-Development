@@ -318,14 +318,25 @@ void collisionHandling(std::shared_ptr<Entity> ent1,Tile ent2)
         float x = b2.left - b1.width - (b1.right - b2.left);
         sf::Vector2f pos = sf::Vector2f(x,b1.top);
         ent1->rect.updatePosition(pos);
+        ent1->currentAnimation.setPosition(pos);
     }
     
     // Handling vertical collisions
-    if((b1.bottom >= b2.top) && (previousPosition1.y < b1.top))
+    // From bellow
+    if((b1.top < b2.bottom) && ((previousPosition1.y + b1.height) > b2.bottom))
+    {
+        float y = b2.bottom;
+        sf::Vector2f pos = sf::Vector2f(b1.left,y);
+        ent1->rect.updatePosition(pos);
+        ent1->currentAnimation.setPosition(pos);
+    }
+    // From above
+    if((b1.bottom > b2.top) && ((previousPosition1.y + b1.height) < b2.bottom))
     {
         float y = b2.top - b1.height - (b1.bottom - b2.top);
         sf::Vector2f pos = sf::Vector2f(b1.left,y);
         ent1->rect.updatePosition(pos);
+        ent1->currentAnimation.setPosition(pos);
     }
 }
 
