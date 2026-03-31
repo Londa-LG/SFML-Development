@@ -111,7 +111,7 @@ class cBoundingBox
     }
 };
 
-struct playerState
+struct CharacterState
 {
     bool jump = false;
     bool fall = true;
