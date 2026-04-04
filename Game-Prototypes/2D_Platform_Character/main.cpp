@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <math.h>
 
 sf::RectangleShape getOutlineRect(float x,float y,float width,float height)
 {
@@ -34,10 +35,11 @@ struct BoundingBox
     sf::RectangleShape outline;
 };
 
-struct Transform
+struct CharacterTransform
 {
-    float mass;
+    float maxVel;
     float acceleration;
+    sf::Vector2f position;
 };
 
 class Character
@@ -59,9 +61,15 @@ class Character
     std::vector<std::shared_ptr<Animation>> animations;
 
     BoundingBox boundingBox;
-    Transform transform;
+    CharacterTransform transform;
 
     Character(){}
+
+    void calAcceleration(float pix)
+    {
+        transform.maxVel =  pix / (0.5 * deltaTime);
+        transform.acceleration = pow(transform.maxVel,2) / (2*pix);
+    }
 
     void changeAnimation(std::string name)
     {
@@ -98,12 +106,27 @@ class Character
 
     void sMovement()
     {
+        if(running)
+        {
+            if(direction == 'L')
+            {
+                transform.position.x -= transform.accelleration;
+                boundingBox.position = transform.position;
+            }
+            else if(direction == 'R')
+            {
+                transform.position.x += transform.accelleration;
+                boundingBox.position = transform.position;
+            }
+        }
+        if(jump)
+        {
+        }
     }
 
     void sGravity()
     {
     }
-
 
     void update()
     {
