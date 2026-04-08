@@ -2,17 +2,6 @@
 #include <memory>
 #include <math.h>
 
-sf::RectangleShape getOutlineRect(float x,float y,float width,float height)
-{
-    sf::RectangleShape rect;
-
-    rect.setPosition(x,y);
-    rect.setOutlineThickness(2);
-    rect.setSize(sf::Vector2f(width,height));
-    rect.setOutlineColor(sf::Color::Blue);
-    
-    return rect;
-}
 
 struct Animation
 {
@@ -25,12 +14,12 @@ struct Animation
 
 struct BoundingBox
 {
-    sf::Vector2f size;
+    float top;
+    float left;
+    float right;
+    float bottom;
+    sf::Vector2i size;
     sf::Vector2f position;
-    float top = position.y;
-    float left = position.x;
-    float right = position.x + size.x;
-    float bottom = position.y + size.y;
 
     sf::RectangleShape outline;
 };
@@ -64,6 +53,39 @@ class Character
     CharacterTransform transform;
 
     Character(){}
+
+    Character(sf::Vector2i size, sf::Vector2f position,std::shared_ptr<Animation> cAnimation, std::vector<std::shared_ptr<Animation>> pAnimations)
+    {
+        // Init bounding Box
+        boundingBox.size = size;
+        boundingBox.position = position;
+        boundingBox.outline = getOutlineRect(position.x,position.y,size.x,size.y);
+
+        boundingBox.top = position.y;
+        boundingBox.left = position.x;
+        boundingBox.right = position.x + size.x;
+        boundingBox.bottom = position.y + size.y;
+
+        // Init Animations
+        animations  = pAnimations;
+        currentAnimation = cAnimation;
+        sprite.setTexture(*currentAnimation->texture);
+        sprite.setPosition(boundingBox.left,boundingBox.top);
+        int i = currentAnimation->index;
+        sprite.setTextureRect(sf::IntRect(currentAnimation->frames[i].x,currentAnimation->frames[i].y,currentAnimation->frameSize.x,currentAnimation->frameSize.y));
+    }
+
+    sf::RectangleShape getOutlineRect(float x,float y,float width,float height)
+    {
+        sf::RectangleShape rect;
+
+        rect.setPosition(x,y);
+        rect.setOutlineThickness(2);
+        rect.setSize(sf::Vector2f(width,height));
+        rect.setOutlineColor(sf::Color::Blue);
+    
+        return rect;
+    }
 
     void calAcceleration(float pix)
     {
@@ -110,13 +132,15 @@ class Character
         {
             if(direction == 'L')
             {
-                transform.position.x -= transform.accelleration;
+                transform.position.x -= transform.acceleration;
                 boundingBox.position = transform.position;
+                sprite.setPosition(boundingBox.position);
             }
             else if(direction == 'R')
             {
-                transform.position.x += transform.accelleration;
+                transform.position.x += transform.acceleration;
                 boundingBox.position = transform.position;
+                sprite.setPosition(boundingBox.position);
             }
         }
         if(jump)
@@ -151,7 +175,44 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800,600), "Window");
     window.setFramerateLimit(60);
 
+    sf::Vector2f position = {400,300};
+    std::vector<sf::Vector2i> frames;
+    sf::Vector2i frameSize = sf::Vector2i(32,32);
 
+    sf::Texture runAnimation;
+    sf::Texture idleAnimation;
+    runAnimation.loadFromFile("./Pink_Man/Run (32x32).png");
+    idleAnimation.loadFromFile("./Pink_Man/Idle (32x32).png");
+
+    std::shared_ptr<Animation> idle = std::make_shared<Animation>();
+    std::shared_ptr<Animation> run = std::make_shared<Animation>();
+    std::vector<std::shared_ptr<Animation>> animations;
+
+    // Animations
+    //Idle
+    for(int i=0; i<11;i++)
+    {
+        frames.push_back(sf::Vector2i((i * frameSize.x),0));
+    }
+    idle->name = "idle";
+    idle->frames = frames;
+    idle->frameSize = frameSize;
+    idle->texture = std::make_shared<sf::Texture>(idleAnimation);
+    frames.clear();
+    //Run
+    for(int i=0;i<12;i++)
+    {
+        frames.push_back(sf::Vector2i((i * frameSize.x),0));
+    }
+    run->name = "run";
+    run->frames = frames;
+    run->frameSize = frameSize;
+    run->texture = std::make_shared<sf::Texture>(runAnimation);
+
+    animations.push_back(idle);
+    animations.push_back(run);
+
+    Character player = Character(frameSize,position,idle,animations);
 
     // Game loop
     while (window.isOpen())
@@ -163,11 +224,73 @@ int main()
             {
                 window.close();
             }
+            if(event.type == sf::Event::KeyPressed)
+            {
+                if(event.key.code == sf::Keyboard::Escape)
+                {
+                    window.close();
+                }
+                if(event.key.code == sf::Keyboard::A)
+                {
+                    player.running = true;
+                    player.direction = 'L';
+                }
+                if(event.key.code == sf::Keyboard::D)
+                {
+                    player.running = true;
+                    player.direction = 'R';
+                }
+            }
+            if(event.type == sf::Event::KeyReleased)
+            {
+                if(event.key.code == sf::Keyboard::A)
+                {
+                    player.running = false;
+                }
+                if(event.key.code == sf::Keyboard::D)
+                {
+                    player.running = false;
+                }
+            }
         }
 
+        player.update();
+
         window.clear(sf::Color::White);
+        player.display(window);
+        window.draw(player.boundingBox.outline);
         window.display();
     }
 
     return EXIT_SUCCESS;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
