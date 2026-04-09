@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <math.h>
+#include <iostream>
 
 
 struct Animation
@@ -35,6 +36,8 @@ class Character
 {
     public:
     float deltaTime = 1/60;
+    float moveDistance = 2; // in pixels
+    float jumpVelocity = 10;
 
     bool fall = false;
     bool jump = false;
@@ -73,6 +76,11 @@ class Character
         sprite.setPosition(boundingBox.left,boundingBox.top);
         int i = currentAnimation->index;
         sprite.setTextureRect(sf::IntRect(currentAnimation->frames[i].x,currentAnimation->frames[i].y,currentAnimation->frameSize.x,currentAnimation->frameSize.y));
+
+        // Init Transform
+        calAcceleration(moveDistance);
+        transform.maxVel = 10;
+        transform.position = position;
     }
 
     sf::RectangleShape getOutlineRect(float x,float y,float width,float height)
@@ -83,13 +91,14 @@ class Character
         rect.setOutlineThickness(2);
         rect.setSize(sf::Vector2f(width,height));
         rect.setOutlineColor(sf::Color::Blue);
+        rect.setFillColor(sf::Color::Transparent);
     
         return rect;
     }
 
     void calAcceleration(float pix)
     {
-        transform.maxVel =  pix / (0.5 * deltaTime);
+        transform.maxVel =  pix / (0.5 * 1);
         transform.acceleration = pow(transform.maxVel,2) / (2*pix);
     }
 
@@ -106,9 +115,7 @@ class Character
 
     void flipSprite()
     {
-        sf::FloatRect bounds = sprite.getLocalBounds();
-        sprite.setOrigin(bounds.width /2.f, bounds.height /2.f);
-        sprite.setScale(-1.f,1.f);
+        sprite.setTextureRect(sf::IntRect(boundingBox.size.x,0,-boundingBox.size.x,boundingBox.size.y));
     }
 
     void sAnimate()
@@ -134,12 +141,15 @@ class Character
             {
                 transform.position.x -= transform.acceleration;
                 boundingBox.position = transform.position;
+                boundingBox.outline.setPosition(transform.position);
                 sprite.setPosition(boundingBox.position);
+
             }
             else if(direction == 'R')
             {
                 transform.position.x += transform.acceleration;
                 boundingBox.position = transform.position;
+                boundingBox.outline.setPosition(transform.position);
                 sprite.setPosition(boundingBox.position);
             }
         }
@@ -232,13 +242,13 @@ int main()
                 }
                 if(event.key.code == sf::Keyboard::A)
                 {
-                    player.running = true;
                     player.direction = 'L';
+                    player.running = true;
                 }
                 if(event.key.code == sf::Keyboard::D)
                 {
-                    player.running = true;
                     player.direction = 'R';
+                    player.running = true;
                 }
             }
             if(event.type == sf::Event::KeyReleased)
