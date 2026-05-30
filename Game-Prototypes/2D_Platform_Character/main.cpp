@@ -28,8 +28,8 @@ struct BoundingBox
 struct CharacterTransform
 {
     float maxVel;
-    float acceleration;
     sf::Vector2f position;
+    sf::Vector2f acceleration;
 };
 
 class Character
@@ -37,7 +37,6 @@ class Character
     public:
     float deltaTime = 1/60;
     float moveDistance = 2; // in pixels
-    float jumpVelocity = 10;
 
     bool fall = false;
     bool jump = false;
@@ -78,7 +77,8 @@ class Character
         sprite.setTextureRect(sf::IntRect(currentAnimation->frames[i].x,currentAnimation->frames[i].y,currentAnimation->frameSize.x,currentAnimation->frameSize.y));
 
         // Init Transform
-        calAcceleration(moveDistance);
+        transform.acceleration.x = calAcceleration(moveDistance,1);
+        transform.acceleration.y = calAcceleration(3,1);
         transform.maxVel = 10;
         transform.position = position;
     }
@@ -96,10 +96,11 @@ class Character
         return rect;
     }
 
-    void calAcceleration(float pix)
+    float calAcceleration(float pix,float sec)
     {
-        transform.maxVel =  pix / (0.5 * 1);
-        transform.acceleration = pow(transform.maxVel,2) / (2*pix);
+        transform.maxVel =  pix / (0.5 * sec);
+        float acceleration = pow(transform.maxVel,2) / (2*pix);
+        return acceleration;
     }
 
     void changeAnimation(std::string name)
@@ -139,15 +140,14 @@ class Character
         {
             if(direction == 'L')
             {
-                transform.position.x -= transform.acceleration;
+                transform.position.x -= transform.acceleration.x;
                 boundingBox.position = transform.position;
                 boundingBox.outline.setPosition(transform.position);
                 sprite.setPosition(boundingBox.position);
-
             }
             else if(direction == 'R')
             {
-                transform.position.x += transform.acceleration;
+                transform.position.x += transform.acceleration.x;
                 boundingBox.position = transform.position;
                 boundingBox.outline.setPosition(transform.position);
                 sprite.setPosition(boundingBox.position);
@@ -160,6 +160,16 @@ class Character
 
     void sGravity()
     {
+        if(!jump)
+        {
+            if(transform.position.y < 568)
+            {
+             transform.position.y += transform.acceleration.y;
+             boundingBox.position = transform.position;
+             boundingBox.outline.setPosition(transform.position);
+             sprite.setPosition(boundingBox.position);
+            }
+        }
     }
 
     void update()
@@ -185,7 +195,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800,600), "Window");
     window.setFramerateLimit(60);
 
-    sf::Vector2f position = {400,300};
+    sf::Vector2f position = {400,70};
     std::vector<sf::Vector2i> frames;
     sf::Vector2i frameSize = sf::Vector2i(32,32);
 
