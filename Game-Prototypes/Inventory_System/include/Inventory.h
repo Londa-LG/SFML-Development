@@ -58,7 +58,7 @@ struct Consumable{
 };
 
 struct Inventory{
-    int space;
+    int available_space;
     Money gold;
     std::map<int,Weapon> weapons;
     std::map<int,Armour> armour;
@@ -74,9 +74,9 @@ void collect_item_armour(Inventory& inv,Armour& armour);
 void collect_item_potion(Inventory& inv,Consumable potion);
 void collect_item_quest_item(Inventory& inv,QuestItem q_item);
 
-void drop_item_food(Iventory& inv,int food_id);
+void drop_item_food(Inventory& inv,int food_id);
 void drop_item_money(Inventory& inv,int amount);
 void drop_item_potion(Inventory& inv,int potion_id);
 void drop_item_weapon(Inventory& inv,int weapon_id);
-void drop_item_armour(Inventory& inv,int armout_id);
-void drop_item_quest_item(Inventory& inv,int questy_item_id);
+void drop_item_armour(Inventory& inv,int armour_id);
+void drop_item_quest_item(Inventory& inv,int q_item_id);

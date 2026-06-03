@@ -6,6 +6,8 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800,600), "Window");
     window.setFramerateLimit(60);
 
+    Inventory inv = Inventory();
+    
     // Game loop
     while (window.isOpen())
     {
@@ -19,7 +21,6 @@ int main()
         }
 
         window.clear(sf::Color::Yellow);
-        window.draw(w1.sprite);
         window.display();
     }
 

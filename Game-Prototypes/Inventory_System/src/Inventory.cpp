@@ -1,127 +1,86 @@
 #include <SFML/Graphics.hpp>
-#include <map>
+#include "Inventory.h"
 
-enum ItemType { 
-    armour, 
-    consumable, 
-    weapon, 
-    quest, 
-    money
-};
-
-class Item{
-    public:
-        int id;
-        int value;
-        ItemType type;
-        sf::Sprite sprite;
-};
-
-class Armour: public Item{
-    public:
-        int protection;
-
-        Armour(int p_id,ItemType p_type,sf::Sprite p_sprite,int p_protection){
-            id = p_id;
-            type = p_type;
-            sprite = p_sprite;
-            protection = p_protection;
-        }
-};
-
-class Consumable: public Item{
-    public:
-        int health_inc;
-        int stamina_inc;
-        int agility_inc;
-        int strength_inc;
-        
-        Consumable(int p_id,ItemType p_type,sf::Sprite p_sprite,int p_health_inc,int p_stamina_inc,int p_agility_inc,int p_strength_inc)
-        {
-            id = p_id;
-            type = p_type;
-            sprite = p_sprite;
-            health_inc = p_health_inc;
-            stamina_inc = p_stamina_inc;
-            agility_inc = p_agility_inc;
-            strength_inc = p_strength_inc;
-        }
-};
-
-class Weapon: public Item{
-    public:
-        int required_strength;
-        int damage;
-        int durability;
-
-        Weapon(int p_id,ItemType p_type,sf::Sprite p_sprite,int p_required_strength,int p_damage,int p_durability)
-        {
-            id = p_id;
-            type = p_type;
-            sprite = p_sprite;
-            damage = p_damage;
-            durability = p_durability;
-            required_strength = p_required_strength;
-        }
-};
-
-class QuestItem: public Item{
-    public:
-        int quest_id;
-
-        QuestItem(int p_id,ItemType p_type,sf::Sprite p_sprite,int p_quest_id)
-        {
-            id = p_id;
-            type = p_type;
-            sprite = p_sprite;
-            quest_id = p_quest_id;
-        }
-};
-
-class Currency: public Item{
-    public:
-        int quantity;
-
-        Currency(int p_id,ItemType p_type,sf::Sprite p_sprite,int p_quantity)
-        {
-            id = p_id;
-            type = p_type;
-            sprite = p_sprite;
-            quantity = p_quantity;
-        }
-};
-
-class Inventory
+void collect_item_money(Inventory& inv,int amount)
 {
-    public:
-        int size;
-        int item_count;
-        std::map<int,Item> inventory;
-        std::map<int,Item> equipment;
-        
-        Inventory(int p_size,int p_item_count,std::map<int,Item> p_inventory,std::map<int,Item> p_equipment)
-        {
-            size = p_size;
-            inventory = p_inventory;
-            equipment = p_equipment;
-            item_count = p_item_count;
-        }
+    if(inv.available_space > 0)
+    {
+        inv.gold.amount += amount;
+        inv.available_space--;
+    }
+}
 
-        bool add_to_inventory(int location,Item item)
-        {
-           item_count++;
-           if(item_count < size)
-           {
-               inventory[location] = item;
-               return true;
-           }
-               
-           return false;
-        }
-        bool equip_item(int location,Item item)
-        {
-           equipment[location] = item; 
-           return true;
-        }
-};
+void collect_item_food(Inventory& inv,Consumable food)
+{
+    if(inv.available_space > 0)
+    {
+        inv.food[food.id] = food;
+        inv.available_space--;
+    }
+}
 
+void collect_item_weapon(Inventory& inv,Weapon& weapon)
+{
+    if(inv.available_space > 0)
+    {
+        inv.weapons[weapon.id] = weapon;
+        inv.available_space--;
+    }
+}
+
+void collect_item_armour(Inventory& inv,Armour& armour)
+{
+    if(inv.available_space > 0)
+    {
+        inv.armour[armour.id] = armour;
+        inv.available_space--;
+    }
+}
+
+void collect_item_potion(Inventory& inv,Consumable potion)
+{
+    if(inv.available_space > 0)
+    {
+        inv.potions[potion.id] = potion;
+        inv.available_space--;
+    }
+}
+
+void collect_item_quest_item(Inventory inv,QuestItem q_item)
+{
+    if(inv.available_space > 0)
+    {
+        inv.quest_items[q_item.id] = q_item;
+        inv.available_space--;
+    }
+}
+
+void drop_item_money(Inventory& inv,int amount)
+{
+    inv.gold.amount -= amount;
+}
+
+void drop_item_food(Inventory& inv,int food_id)
+{
+    inv.food.erase(food_id);
+}
+
+void drop_item_potion(Inventory& inv,int potion_id)
+{
+    inv.potions.erase(potion_id);
+}
+
+void drop_item_weapon(Inventory& inv,int weapon_id)
+{
+    inv.weapons.erase(weapon_id);
+}
+
+void drop_item_armour(Inventory& inv,int armour_id)
+{
+    inv.armour.erase(armour_id);
+}
+
+void drop_item_quest_item(Inventory& inv,int q_item_id)
+{
+    inv.quest_items.erase(q_item_id);
+}
