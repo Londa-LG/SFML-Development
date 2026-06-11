@@ -84,3 +84,5 @@ void drop_item_quest_item(Inventory& inv,int q_item_id)
 {
     inv.quest_items.erase(q_item_id);
 }
+
+

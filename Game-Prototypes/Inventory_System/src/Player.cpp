@@ -12,3 +12,6 @@ void player_init(Player &player,std::shared_ptr<sf::Texture> texture)
     player.sprite.setPosition(player.position.top,player.position.left);
 }
 
+void player_move(Player &player)
+{
+}

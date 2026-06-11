@@ -80,3 +80,6 @@ void drop_item_potion(Inventory& inv,int potion_id);
 void drop_item_weapon(Inventory& inv,int weapon_id);
 void drop_item_armour(Inventory& inv,int armour_id);
 void drop_item_quest_item(Inventory& inv,int q_item_id);
+
+sf::Text inventory_display_get(sf::Font font,Inventory inventory);
+sf::Text inventory_display_update(sf::Font font,Inventory inventory);
