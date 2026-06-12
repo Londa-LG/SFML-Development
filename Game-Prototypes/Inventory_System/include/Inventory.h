@@ -23,7 +23,7 @@ struct Weapon{
     int durability;
     int trade_value;
     bool one_hander;
-    int required_strenght;
+    int required_strength;
 
     std::string name;
     sf::Sprite sprite;
