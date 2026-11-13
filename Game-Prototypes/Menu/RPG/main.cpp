@@ -6,23 +6,17 @@
 struct ConversationBox{
   sf::Font font;
   sf::Text message;
-  sf::Text option_1;
-  sf::Text option_2;
-  sf::Text option_3;
-  sf::Text option_4;
-  sf::FloatRect option_1_bounds;
-  sf::FloatRect option_2_bounds;
-  sf::FloatRect option_3_bounds;
-  sf::FloatRect option_4_bounds;
+  std::vector<sf::Text> options;
+  std::vector<sf::FloatRect> bounds;
+
   bool clicked[4];
-
-
   sf::Vector2f size;
   sf::Vector2f position;
   sf::RectangleShape background;
 };
 
 struct Conversation{
+  bool keep;
   std::string starter;
   std::vector<std::string> options;
   std::vector<std::string> responses;
@@ -39,10 +33,17 @@ ConversationBox get_convo_box(sf::Font &font)
   c_box.clicked[2] = false;
   c_box.clicked[3] = false;
   c_box.message.setFont(font);
-  c_box.option_1.setFont(font);
-  c_box.option_2.setFont(font);
-  c_box.option_3.setFont(font);
-  c_box.option_4.setFont(font);
+  
+  for(int i=0;i<4;i++)
+  {
+    c_box.options.push_back(sf::Text());
+    c_box.options[i].setFont(font);
+  }
+
+  for(int i=0;i<4;i++)
+  {
+    c_box.bounds.push_back(sf::FloatRect());
+  }
 
   c_box.size = {700,250};
   c_box.position = {50,290};
@@ -57,29 +58,29 @@ ConversationBox get_convo_box(sf::Font &font)
   c_box.message.setPosition(c_box.position.x + text_margin_x,c_box.position.y + text_margin_y);
   c_box.message.setString("Hey,you look like someone who can handle a little trouble.Strange things have\nbeen happening nearby,the villagers are getting worried. Could you loook into it\nand come back when you know what's going on? I'll make it worth you while.");
   
-  c_box.option_1.setCharacterSize(16);
-  c_box.option_1.setFillColor(sf::Color::Black);
-  c_box.option_1.setString("1. Worth my while you say.");
-  c_box.option_1.setPosition(c_box.position.x + text_margin_x,c_box.position.y + 120);
-  c_box.option_1_bounds = c_box.option_1.getGlobalBounds();
+  c_box.options.at(0).setCharacterSize(16);
+  c_box.options[0].setFillColor(sf::Color::Black);
+  c_box.options[0].setString("1. Worth my while you say.");
+  c_box.options[0].setPosition(c_box.position.x + text_margin_x,c_box.position.y + 120);
+  c_box.bounds[0] = c_box.options[0].getGlobalBounds();
 
-  c_box.option_2.setCharacterSize(16);
-  c_box.option_2.setFillColor(sf::Color::Black);
-  c_box.option_2.setString("2. Is this a trap by any chance?");
-  c_box.option_2.setPosition(c_box.position.x + text_margin_x,c_box.option_1.getPosition().y + text_margin_y);
-  c_box.option_2_bounds = c_box.option_2.getGlobalBounds();
+  c_box.options[1].setCharacterSize(16);
+  c_box.options[1].setFillColor(sf::Color::Black);
+  c_box.options[1].setString("2. Is this a trap by any chance?");
+  c_box.options[1].setPosition(c_box.position.x + text_margin_x,c_box.options[0].getPosition().y + text_margin_y);
+  c_box.bounds[1] = c_box.options[1].getGlobalBounds();
 
-  c_box.option_3.setCharacterSize(16);
-  c_box.option_3.setFillColor(sf::Color::Black);
-  c_box.option_3.setString("3. No.");
-  c_box.option_3.setPosition(c_box.position.x + text_margin_x,c_box.option_2.getPosition().y + text_margin_y);
-  c_box.option_3_bounds = c_box.option_3.getGlobalBounds();
+  c_box.options[2].setCharacterSize(16);
+  c_box.options[2].setFillColor(sf::Color::Black);
+  c_box.options[2].setString("3. No.");
+  c_box.options[2].setPosition(c_box.position.x + text_margin_x,c_box.options[1].getPosition().y + text_margin_y);
+  c_box.bounds[2] = c_box.options[2].getGlobalBounds();
 
-  c_box.option_4.setCharacterSize(16);
-  c_box.option_4.setFillColor(sf::Color::Black);
-  c_box.option_4.setString("4. Leave the conversation");
-  c_box.option_4.setPosition(c_box.position.x + text_margin_x,c_box.option_3.getPosition().y + text_margin_y);
-  c_box.option_4_bounds = c_box.option_4.getGlobalBounds();
+  c_box.options[3].setCharacterSize(16);
+  c_box.options[3].setFillColor(sf::Color::Black);
+  c_box.options[3].setString("4. Leave the conversation");
+  c_box.options[3].setPosition(c_box.position.x + text_margin_x,c_box.options[2].getPosition().y + text_margin_y);
+  c_box.bounds[3] = c_box.options[3].getGlobalBounds();
 
   return c_box;
 }
@@ -88,10 +89,10 @@ void draw_c_box(sf::RenderWindow &window,ConversationBox &c_box)
 {
   window.draw(c_box.background);
   window.draw(c_box.message);
-  window.draw(c_box.option_1);
-  window.draw(c_box.option_2);
-  window.draw(c_box.option_3);
-  window.draw(c_box.option_4);
+  for(int i = 0; i<c_box.options.size();i++)
+  {
+    window.draw(c_box.options[i]);
+  }
 }
 
 void handle_option_click(ConversationBox &c_box)
@@ -116,28 +117,28 @@ void handle_option_click(ConversationBox &c_box)
 
 void detect_option_click(sf::Vector2f point,ConversationBox &c_box)
 {
-  if(c_box.option_1_bounds.contains(point))
+  if(c_box.bounds[0].contains(point))
   {
     c_box.clicked[0] = true;
     c_box.clicked[1] = false;
     c_box.clicked[2] = false;
     c_box.clicked[3] = false;
   }
-  else if(c_box.option_2_bounds.contains(point))
+  else if(c_box.bounds[1].contains(point))
   {
     c_box.clicked[0] = false;
     c_box.clicked[1] = true;
     c_box.clicked[2] = false;
     c_box.clicked[3] = false;
   }
-  else if(c_box.option_3_bounds.contains(point))
+  else if(c_box.bounds[2].contains(point))
   {
     c_box.clicked[0] = false;
     c_box.clicked[1] = false;
     c_box.clicked[2] = true;
     c_box.clicked[3] = false;
   }
-  else if(c_box.option_4_bounds.contains(point))
+  else if(c_box.bounds[3].contains(point))
   {
     c_box.clicked[0] = false;
     c_box.clicked[1] = false;
@@ -168,8 +169,13 @@ int main()
             }
         }
 
-        //detect_option_click(box);
-        //handle_option_click(box);
+        if(sf::Mouse::isButtonPressed(sf::Mouse::Left))
+        {
+          sf::Vector2i position = sf::Mouse::getPosition(window);
+          sf::Vector2f point = {position.x * 1.0f,position.y * 1.0f};
+          detect_option_click(point,box);
+          handle_option_click(box);
+        }
 
         window.clear(sf::Color::White);
         draw_c_box(window,box);
